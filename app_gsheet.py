@@ -9,131 +9,45 @@ from gspread.utils import rowcol_to_a1
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Bali Trip Planner",
-    page_icon="🌴",
+    page_icon="✈️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS "FORCE DARK MODE" (Fixes Invisible Text) ---
+# --- 2. MINIMALIST CSS (Just for neat cards) ---
 st.markdown("""
 <style>
-    /* 1. GLOBAL:  Dark Background & White Text */
-    html, body, [class*="css"], [data-testid="stAppViewContainer"] {
-        font-family: 'Open Sans', sans-serif ! important;
-        background-color:  #313338 !important; 
-        color: #FFFFFF !important; 
+    /* Make Dashboard Cards look clean with a slight shadow */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E0E0E0;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-
-    /* 2. SIDEBAR & INPUT FIELDS */
-    section[data-testid="stSidebar"] {
-        background-color: #2b2d31 !important; 
-    }
-    input[type="text"], input[type="number"] {
-        background-color: #1E1F22 !important;
-        color: #FFFFFF ! important;
-        border: 1px solid #1E1F22 !important;
-    }
-
-    /* 3. DARK TABLE (White Header & Content) */
-    div[data-testid="stDataEditor"] {
-        background-color:  #2b2d31 ! important;
-        border: 1px solid #1e1f22;
-    }
-    div[data-testid="stDataEditor"] div[role="columnheader"] {
-        background-color: #1E1F22 !important;
-        color:  #FFFFFF !important;
+    
+    /* Title Styling */
+    .main-title {
+        font-size: 2.2rem;
         font-weight: 700;
-    }
-    div[data-testid="stDataEditor"] div[role="gridcell"] {
-        color: #FFFFFF !important;
-        background-color: #2b2d31 !important;
-    }
-
-    /* 4. METRIC CARDS - SUPER AGGRESSIVE WHITE FORCING */
-    [data-testid="metric-container"] {
-        background-color:  #2b2d31 !important; 
-        border-left: 5px solid #5865F2 !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
-        padding: 16px !important;
+        color: #1E88E5; /* Professional Blue */
+        margin-bottom: 5px;
     }
     
-    /* Force ALL text inside metric to WHITE */
-    [data-testid="metric-container"] * {
-        color: #FFFFFF !important;
+    .sub-title {
+        font-size: 1rem;
+        color: #666666;
+        margin-bottom: 20px;
     }
     
-    /* Label (Total Budget, Paid Amount, etc) */
-    [data-testid="stMetricLabel"],
-    [data-testid="metric-container"] label,
-    [data-testid="metric-container"] [data-testid="stMetricLabel"] {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* BIG VALUE (Rp numbers) - FORCE WHITE */
-    [data-testid="stMetricValue"],
-    [data-testid="metric-container"] [data-testid="stMetricValue"],
-    [data-testid="metric-container"] [data-testid="stMetricValue"] > div,
-    [data-testid="metric-container"] div[data-testid="stMetricValue"] {
-        color: #FFFFFF !important; 
-        font-weight: 900 !important;
-        font-size: 2. 2rem !important;
-        text-shadow: 0px 0px 20px rgba(255,255,255,0.5) !important;
-        -webkit-text-fill-color: #FFFFFF !important; /* Safari fix */
-    }
-    
-    /* Delta (1 items, 0. 0%, etc) */
-    [data-testid="stMetricDelta"],
-    [data-testid="metric-container"] [data-testid="stMetricDelta"],
-    [data-testid="metric-container"] [data-testid="stMetricDelta"] > * {
-        color: #00D9FF !important;
-        font-weight: 600 !important;
-        -webkit-text-fill-color:  #00D9FF !important;
-    }
-    
-    /* Force SVG arrows to be visible */
-    [data-testid="stMetricDelta"] svg {
-        fill: #00D9FF !important;
-    }
-
-    /* 5. TITLES */
-    . main-title { 
-        font-weight: 800; 
-        font-size:  2.5rem; 
-        color: #FFFFFF !important; 
-        text-shadow: 0px 2px 8px rgba(88,101,242,0.6);
-    }
-    . sub-title { 
-        color: #B5BAC1 !important;
-        font-weight: 500;
-        font-size: 1.1rem;
-    }
-
-    /* 6. BUTTONS */
-    .stButton > button[kind="primary"] {
-        background-color: #5865F2 !important; 
-        color: #FFFFFF !important;
-        border: none;
-        font-weight: 600;
-    }
+    /* Red Delete Button */
     button[kind="secondary"] {
-        background-color:  transparent !important;
-        border: 1px solid #DA373C !important;
-        color: #DA373C !important;
-        font-weight: 600;
+        color: #D32F2F !important;
+        border-color: #D32F2F !important;
     }
     button[kind="secondary"]:hover {
-        border-color: #FF5555 !important;
-        color: #FF5555 !important;
+        background-color: #FFEBEE !important;
     }
-
-    /* 7. Headings */
-    h4, h3, h2, h1 {
-        color:  #FFFFFF !important;
-        font-weight: 700 !important;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,12 +59,12 @@ WORKSHEET_NAME = "Sheet1"
 def init_gsheet_connection():
     try:
         credentials_dict = st.secrets["gcp_service_account"]
-        credentials = service_account.Credentials. from_service_account_info(
+        credentials = service_account.Credentials.from_service_account_info(
             credentials_dict,
             scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         )
         return gspread.authorize(credentials)
-    except Exception as e: 
+    except Exception as e:
         st.error(f"Connection Error: {str(e)}")
         return None
 
@@ -158,7 +72,7 @@ def init_gsheet_connection():
 def load_data():
     try:
         gc = init_gsheet_connection()
-        if not gc:  return None
+        if not gc: return None
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         data = ws.get_all_values()
         
@@ -166,10 +80,10 @@ def load_data():
         if len(data) <= 1: return pd.DataFrame(columns=cols)
         df = pd.DataFrame(data[1:], columns=data[0])
         
-        # CLEAN GHOST ROWS (Remove rows where Item is empty)
+        # REMOVE EMPTY ROWS (Fixes Ghost Rows)
         df = df[df['Item'].str.strip() != '']
         df = df.dropna(subset=['Item'])
-
+        
         for c in cols:
             if c not in df.columns: df[c] = "FALSE"
         for c in ['Qty', 'Price', 'Total']:
@@ -178,7 +92,7 @@ def load_data():
         df['Booked'] = df['Booked'].apply(lambda x: str(x).upper() == 'TRUE')
         return df[cols]
     except Exception as e:
-        st.error(f"Error Loading Data: {str(e)}")
+        st.error(f"Error loading data: {str(e)}")
         return None
 
 def save_data(item, qty, price, total, type_, paid, booked):
@@ -188,14 +102,14 @@ def save_data(item, qty, price, total, type_, paid, booked):
         ws.append_row([item, int(qty), int(price), int(total), type_, "TRUE" if paid else "FALSE", "TRUE" if booked else "FALSE"])
         st.cache_data.clear()
         return True
-    except Exception:  return False
+    except Exception: return False
 
 def update_data(df_edited):
     try:
         gc = init_gsheet_connection()
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         df_up = df_edited.copy()
-        if 'Delete' in df_up.columns: df_up = df_up. drop(columns=['Delete'])
+        if 'Delete' in df_up.columns: df_up = df_up.drop(columns=['Delete'])
         df_up['Paid'] = df_up['Paid'].apply(lambda x: "TRUE" if x else "FALSE")
         df_up['Booked'] = df_up['Booked'].apply(lambda x: "TRUE" if x else "FALSE")
         ws.clear()
@@ -204,33 +118,33 @@ def update_data(df_edited):
         return True
     except Exception: return False
 
-# --- 4. UI ---
-st.markdown('<div class="main-title">🌴 Bali Trip Planner</div>', unsafe_allow_html=True)
+# --- 4. MAIN UI ---
+st.markdown('<div class="main-title">Bali Trip Planner</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Budget Management Dashboard</div>', unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st. markdown("### 📝 Add New Item")
+    st.header("📝 Add New Item")
     with st.form("add_form", clear_on_submit=True):
-        item = st.text_input("Item Name", placeholder="e.g.  Flight Tickets")
+        item = st.text_input("Item Name", placeholder="e.g. Hotel / Flight")
         c1, c2 = st.columns(2)
         with c1: qty = st.number_input("Qty", 1, value=1)
         with c2: price = st.number_input("Price (IDR)", 0, step=50000)
         type_ = st.radio("Type", ["Per Unit", "Lump Sum"])
         st.markdown("---")
-        c3, c4 = st. columns(2)
+        c3, c4 = st.columns(2)
         with c3: paid = st.checkbox("Paid")
         with c4: booked = st.checkbox("Booked")
         
         if st.form_submit_button("Save Item", use_container_width=True):
-            if item: 
+            if item:
                 tot = (price * qty) if type_ == "Per Unit" else price
                 typ = "Unit" if type_ == "Per Unit" else "Lump Sum"
                 if save_data(item, qty, price, tot, typ, paid, booked):
                     st.success("Saved Successfully!")
                     st.rerun()
             else:
-                st.warning("Please enter item name.")
+                st.warning("Item name is required.")
 
 # --- DASHBOARD ---
 df = load_data()
@@ -244,40 +158,41 @@ if df is not None:
         total = paid_amt = remain = pct = 0
 
     m1, m2, m3 = st.columns(3)
-    with m1: st.metric("💰 Total Budget", f"Rp {total:,. 0f}", f"{len(df)} Items")
-    with m2: st.metric("✅ Paid Amount", f"Rp {paid_amt:,.0f}", f"{pct:.1f}%")
-    with m3: st.metric("⏳ Remaining", f"Rp {remain:,.0f}", f"- Rp {paid_amt:,.0f}", delta_color="inverse")
+    with m1: st.metric("Total Budget", f"Rp {total:,.0f}", f"{len(df)} Items")
+    with m2: st.metric("Paid Amount", f"Rp {paid_amt:,.0f}", f"{pct:.1f}%")
+    with m3: st.metric("Remaining", f"Rp {remain:,.0f}", f"- Rp {paid_amt:,.0f}", delta_color="inverse")
 
     st.markdown("---")
     
     # --- TABLE ---
     c_head, c_btn = st.columns([4,1])
-    with c_head:  st.markdown("#### 📊 Budget Details")
+    with c_head: st.subheader("Budget Details")
     with c_btn: 
-        if st.button("🔄 Refresh Data", type="secondary"): st.cache_data.clear(); st.rerun()
+        if st.button("🔄 Refresh"): st.cache_data.clear(); st.rerun()
 
     if not df.empty:
         df_display = df.copy()
-        df_display. insert(0, "Delete", False)
+        df_display.insert(0, "Delete", False)
 
+        # TABLE SETTINGS
         edited_df = st.data_editor(
             df_display,
             column_config={
-                "Delete":  st.column_config. CheckboxColumn("🗑️", width="small"),
-                "Item": st.column_config.TextColumn("Item Name", width="medium"), 
+                "Delete": st.column_config.CheckboxColumn("🗑️", width="small"),
+                "Item": st.column_config.TextColumn("Item Name", width="medium", required=True),
                 "Qty": st.column_config.NumberColumn("Qty", width="small"),
-                "Price":  st.column_config.NumberColumn("Price", format="Rp %d", width="medium"),
-                "Total": st. column_config.NumberColumn("Total", format="Rp %d", width="medium"),
-                "Type": st. column_config.TextColumn("Type", width="small"),
+                "Price": st.column_config.NumberColumn("Price", format="Rp %d", width="medium"),
+                "Total": st.column_config.NumberColumn("Total", format="Rp %d", width="medium"),
+                "Type": st.column_config.TextColumn("Type", width="small", disabled=True),
                 "Paid": st.column_config.CheckboxColumn("Paid", width="small"),
-                "Booked": st.column_config.CheckboxColumn("Book", width="small")
+                "Booked": st.column_config.CheckboxColumn("Booked", width="small")
             },
             hide_index=True,
-            use_container_width=True,
-            num_rows="fixed"
+            use_container_width=True, # Full Width Table
+            num_rows="fixed" # IMPORTANT: Prevents ghost rows
         )
 
-        col_del, col_space, col_save = st.columns([1. 5, 2, 1.5])
+        col_del, col_space, col_save = st.columns([1.5, 2, 1.5])
         
         with col_del:
             to_del = edited_df[edited_df['Delete'] == True]
