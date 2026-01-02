@@ -9,99 +9,105 @@ from gspread.utils import rowcol_to_a1
 # --- PAGE CONFIG ---
 st.set_page_config(
     page_title="Bali Trip Planner",
-    page_icon="🌸", 
+    page_icon="🌴", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- CSS: PINK, TEAL, & CREAM THEME ---
+# --- CSS: MODERN DARK THEME (DISCORD COLOR PALETTE) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    /* Font Open Sans (Mirip Font Discord/Modern Web) */
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
 
     html, body, [class*="css"], [data-testid="stAppViewContainer"] {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif !important;
-        color: #424242; 
-        background-color: #FFFBF5; 
+        font-family: 'Open Sans', 'Helvetica Neue', sans-serif !important;
+        background-color: #313338; 
+        color: #dbdee1;
     }
 
-    .stApp { background-color: #FFFBF5; }
-    
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #F7F2E8; 
-        border-right: 1px solid #E0E0E0;
+        background-color: #2b2d31; 
+        border-right: none;
     }
 
+    /* Header */
     .main-title {
+        font-family: 'Open Sans', sans-serif;
+        font-weight: 800; 
         font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: #D81B60; 
+        color: #f2f3f5;
         margin-bottom: 0.2rem;
     }
     
     .sub-title {
         font-size: 1rem;
-        color: #00897B; 
+        color: #949ba4;
         font-weight: 500;
         margin-bottom: 2rem;
     }
 
-    /* Metric Cards */
+    /* Cards (Kotak Angka) */
     div[data-testid="metric-container"] {
-        background-color: #FFFFFF;
-        border: 1px solid #F8BBD0; 
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 5px rgba(216, 27, 96, 0.05);
+        background-color: #2b2d31; 
+        border-left: 4px solid #5865F2; /* Aksen Biru */
+        padding: 15px;
+        border-radius: 4px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     div[data-testid="metric-container"] label {
-        color: #00796B; 
-        font-weight: 600;
-        font-size: 0.9rem;
+        color: #b5bac1; 
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase; /* Biar tegas */
     }
     
     div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
-        color: #D81B60;
+        color: #f2f3f5;
         font-weight: 700;
-        font-size: 1.8rem;
+        font-size: 1.6rem;
     }
 
-    /* Primary Button (Teal) */
+    /* Tombol Utama (Biru Blurple) */
     .stButton > button {
-        background-color: #00897B; 
+        background-color: #5865F2; 
         color: white;
-        border-radius: 8px;
+        border-radius: 4px;
         border: none;
         padding: 0.6rem 1.2rem;
         font-weight: 600;
-        box-shadow: 0 2px 4px rgba(0, 137, 123, 0.2);
-        transition: all 0.2s ease;
+        font-size: 0.95rem;
+        transition: background-color 0.2s;
     }
     .stButton > button:hover {
-        background-color: #00796B; 
+        background-color: #4752C4; 
         color: white;
-        transform: translateY(-1px);
     }
 
-    /* Delete Button Styling (Red) */
+    /* Tombol Delete (Merah) */
     button[kind="secondary"] {
-        background-color: white;
-        color: #D32F2F;
-        border: 1px solid #D32F2F;
+        background-color: transparent;
+        color: #DA373C;
+        border: 1px solid #DA373C;
     }
     button[kind="secondary"]:hover {
-        background-color: #FFEBEE;
-        color: #B71C1C;
-        border-color: #B71C1C;
+        background-color: #DA373C;
+        color: white;
+        border: 1px solid #DA373C;
     }
 
+    /* Tabel */
     div[data-testid="stDataEditor"] {
-        border-radius: 10px;
-        border: 1px solid #FFE0B2; 
-        overflow: hidden;
-        background-color: white;
+        border-radius: 4px;
+        border: 1px solid #1e1f22;
+        background-color: #2b2d31;
+    }
+    
+    /* Checkbox agar warnanya gelap pas */
+    div[data-baseweb="checkbox"] div {
+        background-color: #2b2d31;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -128,7 +134,6 @@ def load_data():
     try:
         gc = init_gsheet_connection()
         if not gc: return None
-        
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         data = ws.get_all_values()
         
@@ -157,23 +162,19 @@ def save_data(item, qty, price, total, type_, paid, booked):
     try:
         gc = init_gsheet_connection()
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        row = [item, int(qty), int(price), int(total), type_, "TRUE" if paid else "FALSE", "TRUE" if booked else "FALSE"]
-        ws.append_row(row)
+        ws.append_row([item, int(qty), int(price), int(total), type_, "TRUE" if paid else "FALSE", "TRUE" if booked else "FALSE"])
         st.cache_data.clear()
         return True
-    except Exception:
-        return False
+    except Exception: return False
 
 def update_data(df_edited):
     try:
         gc = init_gsheet_connection()
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         
-        # Bersihkan kolom 'Delete' sebelum upload ke Google Sheet
         df_up = df_edited.copy()
-        if 'Delete' in df_up.columns:
-            df_up = df_up.drop(columns=['Delete'])
-            
+        if 'Delete' in df_up.columns: df_up = df_up.drop(columns=['Delete'])
+        
         df_up['Paid'] = df_up['Paid'].apply(lambda x: "TRUE" if x else "FALSE")
         df_up['Booked'] = df_up['Booked'].apply(lambda x: "TRUE" if x else "FALSE")
         
@@ -181,8 +182,7 @@ def update_data(df_edited):
         set_with_dataframe(ws, df_up)
         st.cache_data.clear()
         return True
-    except Exception:
-        return False
+    except Exception: return False
 
 # --- UI START ---
 st.markdown('<div class="main-title">Bali Trip Planner</div>', unsafe_allow_html=True)
@@ -190,72 +190,62 @@ st.markdown('<div class="sub-title">Manage your budget efficiently</div>', unsaf
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 📝 New Entry")
+    st.markdown("### 📝 Add New Item")
     with st.form("add_form", clear_on_submit=True):
         item = st.text_input("Item Name", placeholder="e.g. Flight Tickets")
         c1, c2 = st.columns(2)
         with c1: qty = st.number_input("Qty", 1, value=1)
         with c2: price = st.number_input("Price (IDR)", 0, step=50000)
-        type_ = st.radio("Pricing Type", ["Per Unit (x Qty)", "Lump Sum (Total)"])
+        type_ = st.radio("Type", ["Per Unit", "Lump Sum"])
         
         st.markdown("---")
-        st.caption("Initial Status")
         paid = st.checkbox("Paid")
-        booked = st.checkbox("Booked / Ordered")
+        booked = st.checkbox("Booked")
         
         if st.form_submit_button("Save Item", use_container_width=True):
             if item:
-                total = (price * qty) if type_ == "Per Unit (x Qty)" else price
-                type_str = "Unit" if type_ == "Per Unit (x Qty)" else "Lump Sum"
-                if save_data(item, qty, price, total, type_str, paid, booked):
-                    st.toast("Item saved successfully!", icon="✅")
+                tot = (price * qty) if type_ == "Per Unit" else price
+                typ = "Unit" if type_ == "Per Unit" else "Lump Sum"
+                if save_data(item, qty, price, tot, typ, paid, booked):
+                    st.success("Item saved successfully!")
                     st.rerun()
             else:
-                st.toast("Item name is required.", icon="⚠️")
+                st.warning("Item name is required.")
 
 # --- DASHBOARD ---
 df = load_data()
 if df is not None:
     if not df.empty:
-        total_budget = df['Total'].sum()
-        total_paid = df[df['Paid']]['Total'].sum()
-        remaining = total_budget - total_paid
-        pct = (total_paid / total_budget * 100) if total_budget > 0 else 0
+        total = df['Total'].sum()
+        paid = df[df['Paid']]['Total'].sum()
+        remain = total - paid
+        pct = (paid/total*100) if total > 0 else 0
     else:
-        total_budget = total_paid = remaining = pct = 0
+        total = paid = remain = pct = 0
 
     m1, m2, m3 = st.columns(3)
-    with m1:
-        st.metric("Total Budget", f"Rp {total_budget:,.0f}", delta=f"{len(df)} Items")
-    with m2:
-        st.metric("Amount Paid", f"Rp {total_paid:,.0f}", delta=f"{pct:.1f}% Paid")
-    with m3:
-        st.metric("Remaining", f"Rp {remaining:,.0f}", delta=f"- Rp {total_paid:,.0f}", delta_color="inverse")
+    with m1: st.metric("Total Budget", f"Rp {total:,.0f}", f"{len(df)} Items")
+    with m2: st.metric("Paid Amount", f"Rp {paid:,.0f}", f"{pct:.1f}%")
+    with m3: st.metric("Remaining", f"Rp {remain:,.0f}", f"- Rp {paid:,.0f}", delta_color="inverse")
 
     st.markdown("---")
     
-    # --- TABLE SECTION ---
+    # --- TABLE ---
     c_head, c_btn = st.columns([4,1])
     with c_head: st.markdown("#### Budget Details")
     with c_btn: 
-        if st.button("Refresh Data"): st.cache_data.clear(); st.rerun()
+        if st.button("Refresh"): st.cache_data.clear(); st.rerun()
 
     if not df.empty:
-        # Menambahkan kolom "Delete" Virtual di posisi paling kiri
         df_display = df.copy()
         df_display.insert(0, "Delete", False)
 
         edited_df = st.data_editor(
             df_display,
             column_config={
-                "Delete": st.column_config.CheckboxColumn(
-                    "Del?",
-                    help="Check to delete this item",
-                    default=False,
-                    width="small"
-                ),
-                "Paid": st.column_config.CheckboxColumn("Paid", default=False),
-                "Booked": st.column_config.CheckboxColumn("Booked", default=False),
+                "Delete": st.column_config.CheckboxColumn("Del?", width="small"),
+                "Paid": st.column_config.CheckboxColumn("Paid"),
+                "Booked": st.column_config.CheckboxColumn("Booked"),
                 "Item": st.column_config.TextColumn("Item Name", width="large"),
                 "Total": st.column_config.NumberColumn("Total", format="Rp %d", disabled=True),
                 "Price": st.column_config.NumberColumn("Price", format="Rp %d"),
@@ -263,40 +253,29 @@ if df is not None:
             },
             hide_index=True,
             use_container_width=True,
-            num_rows="dynamic",
-            key="data_editor"
+            num_rows="dynamic"
         )
 
-        # BUTTONS ACTION
-        col_delete, col_space, col_save = st.columns([1.5, 2, 1.5])
+        col_del, col_space, col_save = st.columns([1.5, 2, 1.5])
         
-        # 1. DELETE BUTTON LOGIC
-        with col_delete:
-            # Hitung berapa yang dicentang delete
-            rows_to_delete = edited_df[edited_df['Delete'] == True]
-            
-            if not rows_to_delete.empty:
-                if st.button(f"🗑️ Delete {len(rows_to_delete)} Item(s)", type="secondary", use_container_width=True):
-                    # Filter data: Ambil yang 'Delete' nya FALSE
-                    df_final = edited_df[edited_df['Delete'] == False]
-                    # Update ke Google Sheet
-                    if update_data(df_final):
-                        st.toast("Selected items deleted!", icon="🗑️")
-                        st.rerun()
+        # DELETE BUTTON
+        with col_del:
+            to_del = edited_df[edited_df['Delete'] == True]
+            if not to_del.empty:
+                if st.button(f"🗑️ Delete {len(to_del)}", type="secondary", use_container_width=True):
+                    update_data(edited_df[edited_df['Delete'] == False])
+                    st.rerun()
             else:
                 st.button("🗑️ Delete Selected", disabled=True, use_container_width=True)
-
-        # 2. SAVE CHANGES LOGIC
+        
+        # SAVE BUTTON
         with col_save:
-            # Kita cek apakah ada perubahan selain kolom Delete
             if st.button("💾 Save Changes", type="primary", use_container_width=True):
-                # Recalculate totals
-                for idx, row in edited_df.iterrows():
+                 for idx, row in edited_df.iterrows():
                     val = row['Price'] * row['Qty'] if row['Type'] == 'Unit' else row['Price']
                     edited_df.at[idx, 'Total'] = val
-                
-                if update_data(edited_df):
-                    st.toast("All changes saved!", icon="💾")
-                    st.rerun()
+                 update_data(edited_df)
+                 st.success("Changes saved!")
+                 st.rerun()
     else:
-        st.info("No data yet. Please add items from the sidebar.")
+        st.info("No items yet.")
