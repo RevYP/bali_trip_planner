@@ -10,113 +10,82 @@ from gspread.utils import rowcol_to_a1
 st.set_page_config(
     page_title="Bali Trip Planner",
     page_icon="🌴",
-    layout="wide", # Ini biar tabelnya lebar ke samping (tidak kepotong)
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS "ANTI-GAIB" & TEMA DARK MODERN ---
+# --- 2. CSS "ANTI-GAIB" KHUSUS (Teks Putih, Kecuali Tombol) ---
 st.markdown("""
 <style>
-    /* --- PAKSA HURUF PUTIH & BACKGROUND GELAP (PERBAIKAN UTAMA) --- */
+    /* 1. GLOBAL: Paksa Background Gelap & Tulisan Putih */
     html, body, [class*="css"], [data-testid="stAppViewContainer"] {
         font-family: 'Open Sans', sans-serif !important;
-        background-color: #313338 !important; /* Abu Gelap Discord */
-        color: #FFFFFF !important; /* Paksa Huruf Putih Terang */
+        background-color: #313338 !important; 
+        color: #FFFFFF !important; 
     }
 
-    /* Paksa Sidebar Gelap */
+    /* 2. SIDEBAR & INPUT */
     section[data-testid="stSidebar"] {
         background-color: #2b2d31 !important; 
     }
-
-    /* Paksa Input Box (Kotak Ketik) jadi Gelap & Tulisannya Putih */
     input[type="text"], input[type="number"] {
         background-color: #1E1F22 !important;
         color: #FFFFFF !important;
         border: 1px solid #1E1F22 !important;
     }
-    
-    /* Perbaikan Tampilan Dropdown/Radio */
-    div[role="radiogroup"] label {
-        color: #FFFFFF !important;
-    }
 
-    /* --- GAYA TABEL (Supaya Rapi & Jelas) --- */
+    /* 3. TABEL GELAP (Header & Isi Putih) */
     div[data-testid="stDataEditor"] {
-        background-color: #2b2d31 !important; /* Background Tabel */
+        background-color: #2b2d31 !important;
         border: 1px solid #1e1f22;
-        border-radius: 8px;
     }
-    
-    /* Warna Header Tabel */
     div[data-testid="stDataEditor"] div[role="columnheader"] {
         background-color: #1E1F22 !important;
         color: #FFFFFF !important;
-        font-weight: 700;
     }
-
-    /* --- KARTU ANGKA (DASHBOARD) --- */
-    div[data-testid="metric-container"] {
-        background-color: #2b2d31; 
-        border-left: 5px solid #5865F2; /* Garis Biru Keren */
-        padding: 15px;
-        border-radius: 6px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    
-    /* Judul Kecil di atas Angka */
-    div[data-testid="metric-container"] label {
-        color: #B5BAC1 !important; /* Abu terang */
-        font-weight: 700;
-    }
-    
-    /* Angka Besar */
-    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
+    div[data-testid="stDataEditor"] div[role="gridcell"] {
         color: #FFFFFF !important;
     }
 
-    /* --- JUDUL HALAMAN --- */
-    .main-title {
-        font-weight: 800; 
-        font-size: 2.5rem;
+    /* 4. KECUALI TOMBOL (Biar Hapus tetap Merah, Refresh tetap warnanya) */
+    /* Tombol Utama (Save/Simpan) -> Biru Teks Putih */
+    .stButton > button[kind="primary"] {
+        background-color: #5865F2 !important; 
         color: #FFFFFF !important;
-        margin-bottom: 0px;
-    }
-    
-    .sub-title {
-        font-size: 1rem;
-        color: #949BA4 !important;
-        margin-bottom: 30px;
-    }
-
-    /* --- TOMBOL (BUTTONS) --- */
-    .stButton > button {
-        background-color: #5865F2; /* Biru Discord */
-        color: white !important;
-        border-radius: 5px;
         border: none;
-        font-weight: 600;
-        transition: 0.2s;
     }
-    .stButton > button:hover {
-        background-color: #4752C4;
-    }
-    
-    /* Tombol Delete (Merah) */
-    button[kind="secondary"] {
+
+    /* Tombol Secondary (Refresh & Delete) -> Jangan dipaksa putih semua */
+    .stButton > button[kind="secondary"] {
         background-color: transparent !important;
-        border: 1px solid #DA373C !important;
+        /* Biarkan warna text bawaan (biasanya merah/abu) atau kita atur khusus */
+    }
+
+    /* KHUSUS TOMBOL DELETE (Merah) */
+    /* Kita akali dengan CSS targeting tombol spesifik jika bisa, 
+       tapi karena Streamlit random, kita pastikan border merah teks merah */
+    button[kind="secondary"]:hover {
+        border-color: #DA373C !important;
         color: #DA373C !important;
     }
-    button[kind="secondary"]:hover {
-        background-color: #DA373C !important;
-        color: white !important;
+    
+    /* 5. METRIC CARDS */
+    div[data-testid="metric-container"] {
+        background-color: #2b2d31; 
+        border-left: 5px solid #5865F2; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
+    div[data-testid="metric-container"] label { color: #B5BAC1 !important; }
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] { color: #FFFFFF !important; }
+    
+    /* JUDUL */
+    .main-title { font-weight: 800; font-size: 2.5rem; color: #FFFFFF !important; }
+    .sub-title { color: #949BA4 !important; }
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. KONEKSI DATABASE (LOGIC SAMA) ---
+# --- 3. DATABASE CONNECTION ---
 SPREADSHEET_ID = "1TQAOaIcGsW9SiXySWXhpsABHkMsrPe1yf9x9a9FIZys"
 WORKSHEET_NAME = "Sheet1"
 
@@ -130,7 +99,7 @@ def init_gsheet_connection():
         )
         return gspread.authorize(credentials)
     except Exception as e:
-        st.error(f"Koneksi Error: {str(e)}")
+        st.error(f"Error Koneksi: {str(e)}")
         return None
 
 @st.cache_data(ttl=5)
@@ -142,24 +111,18 @@ def load_data():
         data = ws.get_all_values()
         
         cols = ['Item', 'Qty', 'Price', 'Total', 'Type', 'Paid', 'Booked']
-        
-        if len(data) <= 1:
-            return pd.DataFrame(columns=cols)
-            
+        if len(data) <= 1: return pd.DataFrame(columns=cols)
         df = pd.DataFrame(data[1:], columns=data[0])
         
         for c in cols:
             if c not in df.columns: df[c] = "FALSE"
-            
         for c in ['Qty', 'Price', 'Total']:
             df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0).astype(int)
-            
         df['Paid'] = df['Paid'].apply(lambda x: str(x).upper() == 'TRUE')
         df['Booked'] = df['Booked'].apply(lambda x: str(x).upper() == 'TRUE')
-        
         return df[cols]
     except Exception as e:
-        st.error(f"Gagal memuat data: {str(e)}")
+        st.error(f"Error Load Data: {str(e)}")
         return None
 
 def save_data(item, qty, price, total, type_, paid, booked):
@@ -175,52 +138,45 @@ def update_data(df_edited):
     try:
         gc = init_gsheet_connection()
         ws = gc.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        
         df_up = df_edited.copy()
         if 'Delete' in df_up.columns: df_up = df_up.drop(columns=['Delete'])
-        
         df_up['Paid'] = df_up['Paid'].apply(lambda x: "TRUE" if x else "FALSE")
         df_up['Booked'] = df_up['Booked'].apply(lambda x: "TRUE" if x else "FALSE")
-        
         ws.clear()
         set_with_dataframe(ws, df_up)
         st.cache_data.clear()
         return True
     except Exception: return False
 
-# --- 4. TAMPILAN UTAMA (UI) ---
+# --- 4. UI ---
 st.markdown('<div class="main-title">Bali Trip Planner</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Kelola budget perjalananmu dengan efisien</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Budget Management Dashboard</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR: INPUT ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 📝 Tambah Item Baru")
+    st.markdown("### 📝 Input Baru")
     with st.form("add_form", clear_on_submit=True):
         item = st.text_input("Nama Item", placeholder="Contoh: Tiket Pesawat")
-        
         c1, c2 = st.columns(2)
         with c1: qty = st.number_input("Qty", 1, value=1)
         with c2: price = st.number_input("Harga (IDR)", 0, step=50000)
-        
-        type_ = st.radio("Tipe Hitungan", ["Per Unit", "Borongan/Total"])
-        
+        type_ = st.radio("Tipe", ["Per Unit", "Borongan"])
         st.markdown("---")
         c3, c4 = st.columns(2)
-        with c3: paid = st.checkbox("Sudah Bayar")
-        with c4: booked = st.checkbox("Sudah Booking")
+        with c3: paid = st.checkbox("Lunas")
+        with c4: booked = st.checkbox("Booking")
         
-        st.markdown("")
         if st.form_submit_button("Simpan Item", use_container_width=True):
             if item:
                 tot = (price * qty) if type_ == "Per Unit" else price
                 typ = "Unit" if type_ == "Per Unit" else "Lump Sum"
                 if save_data(item, qty, price, tot, typ, paid, booked):
-                    st.success("Berhasil disimpan!")
+                    st.success("Tersimpan!")
                     st.rerun()
             else:
-                st.warning("Nama item wajib diisi.")
+                st.warning("Isi nama item.")
 
-# --- DASHBOARD (ANGKA) ---
+# --- DASHBOARD ---
 df = load_data()
 if df is not None:
     if not df.empty:
@@ -238,54 +194,54 @@ if df is not None:
 
     st.markdown("---")
     
-    # --- TABEL DATA ---
+    # --- TABEL ---
     c_head, c_btn = st.columns([4,1])
     with c_head: st.markdown("#### Rincian Budget")
     with c_btn: 
-        if st.button("🔄 Refresh Data"): st.cache_data.clear(); st.rerun()
+        if st.button("🔄 Refresh Data", type="secondary"): st.cache_data.clear(); st.rerun()
 
     if not df.empty:
         df_display = df.copy()
         df_display.insert(0, "Delete", False)
 
+        # === SETTING LEBAR KOLOM BIAR MUAT SEMUA ===
         edited_df = st.data_editor(
             df_display,
             column_config={
-                "Delete": st.column_config.CheckboxColumn("🗑️", width="small", help="Centang untuk hapus"),
-                "Item": st.column_config.TextColumn("Nama Item", width="large"), # Large biar panjang
+                "Delete": st.column_config.CheckboxColumn("🗑️", width="small"),
+                "Item": st.column_config.TextColumn("Nama Item", width="medium"), # Medium aja biar cukup
                 "Qty": st.column_config.NumberColumn("Qty", width="small"),
-                "Price": st.column_config.NumberColumn("Harga", format="Rp %d"),
-                "Total": st.column_config.NumberColumn("Total", format="Rp %d", disabled=True),
-                "Type": st.column_config.TextColumn("Tipe", width="small", disabled=True),
-                "Paid": st.column_config.CheckboxColumn("Lunas?", width="small"),
-                "Booked": st.column_config.CheckboxColumn("Book?", width="small")
+                "Price": st.column_config.NumberColumn("Harga", format="Rp %d", width="medium"),
+                "Total": st.column_config.NumberColumn("Total", format="Rp %d", width="medium"),
+                "Type": st.column_config.TextColumn("Tipe", width="small"),
+                "Paid": st.column_config.CheckboxColumn("Lunas", width="small"),
+                "Booked": st.column_config.CheckboxColumn("Book", width="small")
             },
             hide_index=True,
-            use_container_width=True, # INI KUNCINYA BIAR FULL LEBAR
-            num_rows="dynamic",
-            height=500 # Tinggi tabel biar kelihatan banyak
+            use_container_width=True, # FITUR UTAMA BIAR FULL SCREEN
+            num_rows="dynamic"
         )
 
         col_del, col_space, col_save = st.columns([1.5, 2, 1.5])
         
-        # TOMBOL DELETE
         with col_del:
             to_del = edited_df[edited_df['Delete'] == True]
             if not to_del.empty:
+                # Tombol Hapus pakai 'secondary' biar warnanya beda (merah/abu tergantung hover)
                 if st.button(f"🗑️ Hapus {len(to_del)} Item", type="secondary", use_container_width=True):
                     update_data(edited_df[edited_df['Delete'] == False])
                     st.rerun()
             else:
-                st.button("🗑️ Hapus Terpilih", disabled=True, use_container_width=True)
+                st.button("🗑️ Hapus", disabled=True, type="secondary", use_container_width=True)
         
-        # TOMBOL SAVE
         with col_save:
+            # Tombol Simpan pakai 'primary' (Biru)
             if st.button("💾 Simpan Perubahan", type="primary", use_container_width=True):
                  for idx, row in edited_df.iterrows():
                     val = row['Price'] * row['Qty'] if row['Type'] == 'Unit' else row['Price']
                     edited_df.at[idx, 'Total'] = val
                  update_data(edited_df)
-                 st.success("Data terupdate!")
+                 st.success("Data Tersimpan!")
                  st.rerun()
     else:
-        st.info("Belum ada data. Silakan input di sebelah kiri.")
+        st.info("Belum ada data.")
